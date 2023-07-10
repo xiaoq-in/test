@@ -6,7 +6,7 @@ var usedQuestions = [];
 
 function generateQuestion() {
   var num1, num2, operator, question, answer;
-  
+
   do {
     num1 = Math.floor(Math.random() * 10) + 1;
     num2 = Math.floor(Math.random() * 10) + 1;
@@ -14,9 +14,9 @@ function generateQuestion() {
     question = num1 + " " + operator + " " + num2;
     answer = eval(question);
   } while (usedQuestions.includes(question));
-  
+
   usedQuestions.push(question);
-  
+
   questionElement.textContent = question;
   answerElement.value = "";
   resultElement.textContent = "";
@@ -35,7 +35,14 @@ function checkAnswer() {
     resultElement.classList.add("text-danger");
     resultElement.classList.remove("text-success");
   }
-  generateQuestion();
 }
+
+answerElement.addEventListener("keyup", function (event) {
+  if (event.keyCode === 13) {
+    event.preventDefault();
+    checkAnswer();
+    generateQuestion();
+  }
+});
 
 generateQuestion();
