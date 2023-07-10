@@ -35,13 +35,13 @@ function checkAnswer() {
     resultElement.classList.add("text-danger");
     resultElement.classList.remove("text-success");
   }
+  generateQuestion();
 }
 
 answerElement.addEventListener("keyup", function (event) {
   if (event.keyCode === 13) {
     event.preventDefault();
     checkAnswer();
-    generateQuestion();
   }
 });
 
