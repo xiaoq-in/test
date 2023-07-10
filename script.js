@@ -1,125 +1,127 @@
+var numItemsElement = document.getElementById("numItems");
+var operatorsElement = document.getElementById("operators");
+var minValueElement = document.getElementById("minValue");
+var maxValueElement = document.getElementById("maxValue");
+var minResultElement = document.getElementById("minResult");
+var maxResultElement = document.getElementById("maxResult");
 var questionElement = document.getElementById("question");
 var answerElement = document.getElementById("answer");
+var submitButton = document.getElementById("submit");
 var resultElement = document.getElementById("result");
-var scoreElement = document.getElementById("score");
-var accuracyElement = document.getElementById("accuracy");
 var progressElement = document.getElementById("progress");
-var nextButton = document.getElementById("nextButton");
-var countdownElement = document.getElementById("countdown");
+var timerElement = document.getElementById("timer");
+var statsElement = document.getElementById("stats");
 
-var usedQuestions = [];
+var currentQuestionIndex = 1;
+var totalQuestions = 0;
+var correctAnswers = 0;
 var startTime;
 var endTime;
-var correctCount = 0;
-var totalAttempts = 0;
-var currentQuestionIndex = 0;
-var countdownInterval;
 
 function generateQuestion() {
-  var num1, num2, operator, question, answer;
+  var numItems = parseInt(numItemsElement.value);
+  var operators = Array.from(operatorsElement.selectedOptions, option => option.value);
+  var minValue = parseInt(minValueElement.value);
+  var maxValue = parseInt(maxValueElement.value);
+  var minResult = parseInt(minResultElement.value);
+  var maxResult = parseInt(maxResultElement.value);
 
-  do {
-    num1 = Math.floor(Math.random() * 10) + 1;
-    num2 = Math.floor(Math.random() * 10) + 1;
-    operator = Math.random() < 0.5 ? "+" : "-";
-    question = num1 + " " + operator + " " + num2;
-    answer = eval(question);
-  } while (usedQuestions.includes(question));
+  var question = "";
+  var answer = 0;
 
-  usedQuestions.push(question);
+  for (var i = 0; i < numItems; i++) {
+    var num = Math.floor(Math.random() * (maxValue - minValue + 1)) + minValue;
+    question += num;
+    if (i < numItems - 1) {
+      var operator = operators[Math.floor(Math.random() * operators.length)];
+      question += " " + operator + " ";
+      if (operator === "+") {
+        answer += num;
+      } else if (operator === "-") {
+        answer -= num;
+      } else if (operator === "*") {
+        answer *= num;
+      } else if (operator === "/") {
+        answer /= num;
+      }
+    } else {
+      answer += num;
+    }
+  }
 
-  questionElement.textContent = question;
+  questionElement.textContent = "第 " + currentQuestionIndex + " 题：" + question;
   answerElement.value = "";
   resultElement.textContent = "";
   answerElement.focus();
 
-  currentQuestionIndex++;
+  totalQuestions++;
   updateProgress();
+
+  return answer;
 }
 
-function checkAnswer() {
+function checkAnswer(answer) {
   var userAnswer = parseInt(answerElement.value);
-  var correctAnswer = eval(questionElement.textContent);
-  if (userAnswer === correctAnswer) {
+
+  if (userAnswer === answer) {
     resultElement.textContent = "回答正确！";
-    resultElement.classList.add("text-success");
-    resultElement.classList.remove("text-danger");
-    correctCount++;
+    correctAnswers++;
   } else {
-    resultElement.textContent = "回答错误，正确答案是 " + correctAnswer;
-    resultElement.classList.add("text-danger");
-    resultElement.classList.remove("text-success");
+    resultElement.textContent = "回答错误！正确答案是：" + answer;
   }
-  totalAttempts++;
-  updateScore();
-  nextButton.disabled = false;
-}
 
-function updateScore() {
-  var currentTime = new Date().getTime();
-  var elapsedTime = Math.floor((currentTime - startTime) / 1000); // 转换为秒
-  var accuracy = (correctCount / totalAttempts) * 100;
-
-  scoreElement.textContent = correctCount + "/" + totalAttempts;
-  accuracyElement.textContent = accuracy.toFixed(2) + "%";
-
-  if (elapsedTime >= 300) {
-    // 达到5分钟，停止测试
-    answerElement.disabled = true;
-    resultElement.textContent = "时间到！测试结束。";
-    nextButton.disabled = true;
-    clearInterval(countdownInterval);
+  if (currentQuestionIndex < totalQuestions) {
+    currentQuestionIndex++;
+    generateQuestion();
+  } else {
+    submitButton.disabled = true;
+    endTime = new Date();
+    showStats();
   }
 }
 
 function updateProgress() {
-  progressElement.textContent = "已完成 " + currentQuestionIndex + "/" + usedQuestions.length + " 题";
+  progressElement.textContent = "进度：" + currentQuestionIndex + " / " + totalQuestions;
 }
 
-answerElement.addEventListener("keyup", function (event) {
-  if (event.keyCode === 13) {
-    event.preventDefault();
-    checkAnswer();
-  }
-});
+function startTimer() {
+  startTime = new Date();
+  var countdown = 300; // 5 minutes in seconds
 
-function startCountdown() {
-  var remainingTime = 300; // 5分钟，以秒为单位
+  var timer = setInterval(function() {
+    var now = new Date();
+    var elapsed = Math.floor((now - startTime) / 1000);
+    var remaining = countdown - elapsed;
 
-  function formatTime(seconds) {
-    var minutes = Math.floor(seconds / 60);
-    var remainingSeconds = seconds % 60;
-    return minutes + ":" + (remainingSeconds < 10 ? "0" : "") + remainingSeconds;
-  }
+    var minutes = Math.floor(remaining / 60);
+    var seconds = remaining % 60;
 
-  countdownElement.textContent = formatTime(remainingTime);
-
-  countdownInterval = setInterval(function () {
-    remainingTime--;
-    countdownElement.textContent = formatTime(remainingTime);
-    if (remainingTime <= 0) {
-      clearInterval(countdownInterval);
+    if (remaining >= 0) {
+      timerElement.textContent = "剩余时间：" + minutes + " 分钟 " + seconds + " 秒";
+    } else {
+      clearInterval(timer);
+      timerElement.textContent = "时间到！";
+      submitButton.disabled = true;
+      endTime = now;
+      showStats();
     }
   }, 1000);
 }
 
-function startTest() {
-  startTime = new Date().getTime();
-  generateQuestion();
-  answerElement.disabled = false;
-  answerElement.focus();
-  startCountdown();
+function showStats() {
+  var totalTime = Math.floor((endTime - startTime) / 1000);
+  var averageTime = totalTime / totalQuestions;
+  var accuracy = (correctAnswers / totalQuestions) * 100;
+
+  statsElement.textContent = "总共答题数：" + totalQuestions +
+    "，正确率：" + accuracy.toFixed(2) + "%" +
+    "，平均答题时间：" + averageTime.toFixed(2) + "秒";
 }
 
-function nextQuestion() {
-  nextButton.disabled = true;
-  if (usedQuestions.length < 10) {
-    generateQuestion();
-  } else {
-    answerElement.disabled = true;
-    resultElement.textContent = "测试结束，共完成 " + usedQuestions.length + " 题。";
-    clearInterval(countdownInterval);
-  }
-}
+submitButton.addEventListener("click", function() {
+  var answer = generateQuestion();
+  checkAnswer(answer);
+});
 
-startTest();
+generateQuestion();
+startTimer();
