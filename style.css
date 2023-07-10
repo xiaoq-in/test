@@ -1,0 +1,12 @@
+body {
+  text-align: center;
+}
+
+h1 {
+  color: #333;
+}
+
+.card {
+  max-width: 400px;
+  margin: 0 auto;
+}
